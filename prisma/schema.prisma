@@ -20,8 +20,6 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   addresses Address[]
-
-  @@map("users")
 }
 
 model Address {
@@ -33,10 +31,8 @@ model Address {
   state     String
   zipCode   String
   country   String
-  addressType String @default("home") // home, work, other
+  addressType String @default("home") 
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@map("addresses")
 }
