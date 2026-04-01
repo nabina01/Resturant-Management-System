@@ -53,7 +53,7 @@ describe('Role Middleware', () => {
     const res = buildRes();
     const next = jest.fn();
 
-    authorizeRoles('ADMIN', 'MANAGER')(req, res, next);
+    authorizeRoles('ADMIN', 'WORKER')(req, res, next);
 
     expect(next).toHaveBeenCalled();
   });
@@ -63,7 +63,7 @@ describe('Role Middleware', () => {
     const res = buildRes();
     const next = jest.fn();
 
-    authorizeRoles('ADMIN', 'MANAGER')(req, res, next);
+    authorizeRoles('ADMIN', 'WORKER')(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden' });
