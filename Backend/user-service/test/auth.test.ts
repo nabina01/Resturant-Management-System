@@ -54,7 +54,7 @@ describe('Auth Utilities', () => {
       const token = generateAccessToken({ userId, email, role });
       expect(token).toBeDefined();
       expect(typeof token).toBe('string');
-      expect(token.split('.').length).toBe(3); // JWT has 3 parts
+      expect(token.split('.').length).toBe(3); 
     });
 
     it('should verify a valid access token', () => {
