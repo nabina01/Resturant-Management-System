@@ -13,7 +13,7 @@ services:
 
   user-service:
     build:
-      context: .
+      context: ./Backend
       dockerfile: user-service/Dockerfile
     container_name: rms-user-service
     environment:
@@ -21,11 +21,27 @@ services:
       JWT_SECRET: change-me-in-production
       JWT_ACCESS_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
+      FRONTEND_ORIGIN: http://localhost:2000
     ports:
       - "3000:3000"
     command: sh -c "npx prisma migrate deploy --schema=../prisma/schema.prisma ; npm run dev"
     depends_on:
       - postgres
+
+  frontend:
+    image: node:20-alpine
+    container_name: rms-frontend
+    working_dir: /app
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+    ports:
+      - "2000:2000"
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install ; npm run dev -- --host 0.0.0.0 --port 2000"
+    depends_on:
+      - user-service
 
 volumes:
   postgres_data:

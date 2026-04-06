@@ -1,14 +1,24 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
-import router from "./src/routes/route";
+const cors = require("cors");
+const path = require("path");
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, ".env"), override: true });
+
+const router = require("./src/routes/route").default;
 
 const app = express();
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:2000";
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: FRONTEND_ORIGIN,
+    credentials: true,
+  })
+);
 
 app.use("/api", router);
 
