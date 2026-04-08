@@ -12,13 +12,6 @@ jest.mock('../src/utils/prismaClient', () => ({
       create: jest.fn(),
       delete: jest.fn(),
     },
-    address: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      updateMany: jest.fn(),
-    },
   },
 }));
 

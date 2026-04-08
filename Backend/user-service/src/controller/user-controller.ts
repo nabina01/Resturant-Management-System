@@ -160,7 +160,6 @@ export const getProfile = async (req: any, res: Response, next: NextFunction) =>
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      include: { addresses: true },
     });
 
     return res.json(user ? sanitizeUser(user) : null);
@@ -195,82 +194,6 @@ export const deleteUser = async (req: any, res: Response, next: NextFunction) =>
     });
 
     return res.json({ message: "User deleted" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const addAddress = async (req: any, res: Response, next: NextFunction) => {
-  try {
-    const address = await prisma.address.create({
-      data: {
-        ...req.body,
-        userId: req.userId,
-      },
-    });
-
-    return res.json(address);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const getAddresses = async (req: any, res: Response, next: NextFunction) => {
-  try {
-    const addresses = await prisma.address.findMany({
-      where: { userId: req.userId },
-    });
-
-    return res.json(addresses);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const updateAddress = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const id = String(req.params.id);
-
-    const address = await prisma.address.update({
-      where: { id },
-      data: req.body,
-    });
-
-    return res.json(address);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const deleteAddress = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const id = String(req.params.id);
-
-    await prisma.address.delete({
-      where: { id },
-    });
-
-    return res.json({ message: "Address deleted" });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const setDefaultAddress = async (req: any, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-
-    await prisma.address.updateMany({
-      where: { userId: req.userId },
-      data: { isDefault: false },
-    });
-
-    const address = await prisma.address.update({
-      where: { id },
-      data: { isDefault: true },
-    });
-
-    return res.json(address);
   } catch (err) {
     next(err);
   }
