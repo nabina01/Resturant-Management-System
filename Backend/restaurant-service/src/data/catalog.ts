@@ -89,5 +89,5 @@ export const menuItems: MenuItem[] = [
     imageUrl:
       "https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80",
     isAvailable: true,
-  }
+  },
 ];

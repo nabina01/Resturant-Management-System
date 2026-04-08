@@ -28,12 +28,27 @@ services:
     depends_on:
       - postgres
 
+  restaurant-service:
+    image: node:20-alpine
+    container_name: rms-restaurant-service
+    working_dir: /app
+    environment:
+      PORT: 3001
+      FRONTEND_ORIGIN: http://localhost:2000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./Backend/restaurant-service:/app
+      - /app/node_modules
+    command: sh -c "npm install ; npm run dev"
+
   frontend:
     image: node:20-alpine
     container_name: rms-frontend
     working_dir: /app
     environment:
       VITE_API_URL: http://localhost:3000/api
+      VITE_RESTAURANT_API_URL: http://localhost:3001/api
     ports:
       - "2000:2000"
     volumes:
@@ -42,6 +57,7 @@ services:
     command: sh -c "npm install ; npm run dev -- --host 0.0.0.0 --port 2000"
     depends_on:
       - user-service
+      - restaurant-service
 
 volumes:
   postgres_data:

@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { LogOut, User, MapPin, Home } from 'lucide-react'
+import { LogOut, User, UtensilsCrossed, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DashboardLayoutProps {
@@ -16,7 +16,7 @@ export const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/profile', label: 'Profile', icon: User },
-    { path: '/addresses', label: 'Addresses', icon: MapPin },
+    { path: '/menu', label: 'Menu', icon: UtensilsCrossed },
   ]
 
   const isActive = (path: string) => location.pathname === path

@@ -21,6 +21,12 @@ app.use(
 
 app.use("/api", router);
 
+app.use((err: any, req: any, res: any, next: any) => {
+  res.status(err?.statusCode || 500).json({
+    message: err?.message || "Internal Server Error",
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Restaurant service running on port ${PORT}`);
 });

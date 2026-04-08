@@ -1,10 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { Home } from '@/pages/Home'
+import { Menu } from '@/pages/Menu'
 import { Login } from '@/pages/Login'
 import { Register } from '@/pages/Register'
 import { Dashboard } from '@/pages/Dashboard'
 import { Profile } from '@/pages/Profile'
-import { Addresses } from '@/pages/Addresses'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 function App() {
@@ -13,6 +14,8 @@ function App() {
       <Router>
         <Routes>
           {/* Public routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/menu" element={<Menu />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
@@ -33,17 +36,9 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/addresses"
-            element={
-              <ProtectedRoute>
-                <Addresses />
-              </ProtectedRoute>
-            }
-          />
 
-          {/* Redirect root to dashboard or login */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Fallback route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
       <Toaster position="top-right" richColors />
