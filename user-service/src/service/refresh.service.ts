@@ -13,8 +13,10 @@ export const refreshService = async (refreshToken: string) => {
     throw new Error("Invalid refresh token");
   }
 
+  const userId = typeof decoded.userId === "string" ? parseInt(decoded.userId, 10) : decoded.userId;
+
   const user = await prisma.user.findUnique({
-    where: { id: decoded.userId },
+    where: { id: userId },
   });
 
   if (!user || !user.refreshTokenHash || !user.refreshTokenExpiry) {
@@ -35,7 +37,11 @@ export const refreshService = async (refreshToken: string) => {
   }
 
   const { accessToken, refreshToken: newRefreshToken } =
-    await issueTokenPair(user);
+    await issueTokenPair({
+      id: user.id.toString(),
+      email: user.email,
+      role: user.role,
+    });
 
   return {
     accessToken,

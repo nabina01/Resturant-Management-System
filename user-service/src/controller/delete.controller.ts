@@ -7,7 +7,7 @@ export const deleteUser = async (
   next: NextFunction
 ) => {
   try {
-    await deleteUserService(req.userId);
+    await deleteUserService(req.userId, req.user.role);
 
     return res.json({ message: "User deleted" });
   } catch (err) {

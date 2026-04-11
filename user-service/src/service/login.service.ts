@@ -17,7 +17,11 @@ export const loginService = async (email: string, password: string) => {
     throw new Error("Invalid credentials");
   }
 
-  const { accessToken, refreshToken } = await issueTokenPair(user);
+  const { accessToken, refreshToken } = await issueTokenPair({
+    id: user.id.toString(),
+    email: user.email,
+    role: user.role,
+  });
 
   const { password: _, refreshTokenHash, ...safeUser } = user;
 

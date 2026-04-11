@@ -16,7 +16,6 @@ export const registerUser = async (
       lastName,
       phone,
     });
-
     return res.status(201).json(user);
   } catch (err) {
     next(err);
