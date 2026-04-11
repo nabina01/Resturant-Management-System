@@ -75,10 +75,10 @@ export const Dashboard = () => {
               Edit Profile
             </a>
             <a
-              href="/addresses"
+              href="/menu"
               className="block px-4 py-2 rounded-md bg-secondary text-secondary-foreground text-center font-medium hover:bg-gray-300 transition-colors text-sm"
             >
-              Manage Addresses
+              View Menu
             </a>
           </div>
         </div>

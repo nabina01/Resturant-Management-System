@@ -26,6 +26,26 @@ export interface BackendRefreshTokenResponse {
   accessToken: string
 }
 
+export interface RestaurantInfo {
+  id: string
+  name: string
+  slogan: string
+  description: string
+  location: string
+  phone: string
+  openHours: string
+}
+
+export interface MenuItem {
+  id: string
+  name: string
+  category: 'starter' | 'main' | 'dessert' | 'drink'
+  description: string
+  price: number
+  imageUrl: string
+  isAvailable: boolean
+}
+
 export interface LoginRequest {
   email: string
   password: string
