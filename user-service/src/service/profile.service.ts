@@ -1,9 +1,10 @@
 import prisma from "../utils/prismaClient";
 
 
-export const getProfileService = async (userId: string) => {
+export const getProfileService = async (userId: string | number) => {
+  const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id },
   });
 
   if (!user) {

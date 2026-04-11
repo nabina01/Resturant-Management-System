@@ -1,8 +1,9 @@
 import prisma from "../utils/prismaClient";
 
-export const deleteUserService = async (userId: string) => {
+export const deleteUserService = async (userId: string | number) => {
+  const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id },
   });
 
   if (!user) {
@@ -10,6 +11,6 @@ export const deleteUserService = async (userId: string) => {
   }
 
   await prisma.user.delete({
-    where: { id: userId },
+    where: { id },
   });
 };

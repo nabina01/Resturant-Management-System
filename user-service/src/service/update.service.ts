@@ -2,7 +2,7 @@ import prisma from "../utils/prismaClient";
 import { hashPassword } from "../utils/jwt";
 
 export const updateService = async (
-  userId: string,
+  userId: string | number,
   updateData: {
     firstName?: string;
     lastName?: string;
@@ -10,6 +10,7 @@ export const updateService = async (
     password?: string;
   }
 ) => {
+  const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
   const data: any = {
     firstName: updateData.firstName,
     lastName: updateData.lastName,
@@ -21,7 +22,7 @@ export const updateService = async (
   }
 
   const updatedUser = await prisma.user.update({
-    where: { id: userId },
+    where: { id },
     data,
   });
 
