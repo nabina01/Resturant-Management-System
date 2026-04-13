@@ -13,8 +13,9 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "index.ts"],
+  "include": ["src/**/*", "test/**/*", "index.ts"],
   "exclude": ["node_modules", "dist"]
 }

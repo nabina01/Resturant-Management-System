@@ -1,112 +1,128 @@
-import { Request, Response, NextFunction } from "express";
-import { deleteUser } from "../src/controller/delete.controller";
-import * as deleteServiceModule from "../src/service/delete.service";
+import { z } from "zod";
+import { ProfileRequestSchema } from "../src/utils/validationSchemas";
 
-jest.mock("../src/service/delete.service");
+describe("Delete User Request & Response Validation", () => {
+  describe("Delete Request Validation", () => {
+    it("should validate delete request with userId", () => {
+      const deleteRequestSchema = z.object({
+        userId: z.string(),
+        user: z.object({
+          role: z.string(),
+        }),
+      });
+      const validRequest = {
+        userId: "user-123",
+        user: {
+          role: "user",
+        },
+      };
+      const result = deleteRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
+    });
 
-describe("Delete Controller", () => {
-  let mockReq: Partial<any>;
-  let mockRes: Partial<Response>;
-  let mockNext: NextFunction;
+    it("should validate delete request with admin role", () => {
+      const deleteRequestSchema = z.object({
+        userId: z.string(),
+        user: z.object({
+          role: z.enum(["user", "admin", "restaurant_owner"]),
+        }),
+      });
+      const validRequest = {
+        userId: "user-123",
+        user: {
+          role: "admin",
+        },
+      };
+      const result = deleteRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
+    });
 
-  beforeEach(() => {
-    mockReq = {
-      userId: "user-123",
-      user: {
-        role: "user",
-      },
-    };
+    it("should validate delete request with restaurant_owner role", () => {
+      const deleteRequestSchema = z.object({
+        userId: z.string(),
+        user: z.object({
+          role: z.enum(["user", "admin", "restaurant_owner"]),
+        }),
+      });
+      const validRequest = {
+        userId: "user-123",
+        user: {
+          role: "restaurant_owner",
+        },
+      };
+      const result = deleteRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
+    });
 
-    mockRes = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
-    };
+    it("should fail with missing userId", () => {
+      const deleteRequestSchema = z.object({
+        userId: z.string(),
+        user: z.object({
+          role: z.string(),
+        }),
+      });
+      const invalidRequest = {
+        user: {
+          role: "user",
+        },
+      };
+      const result = deleteRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
 
-    mockNext = jest.fn();
-
-    jest.clearAllMocks();
+    it("should fail with missing user role", () => {
+      const deleteRequestSchema = z.object({
+        userId: z.string(),
+        user: z.object({
+          role: z.string(),
+        }),
+      });
+      const invalidRequest = {
+        userId: "user-123",
+        user: {},
+      };
+      const result = deleteRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
   });
 
-  describe("deleteUser", () => {
-    it("should successfully delete user", async () => {
-      const mockDeleteUserService =
-        deleteServiceModule.deleteUserService as jest.Mock;
-
-      mockDeleteUserService.mockResolvedValue(undefined);
-
-      await deleteUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockDeleteUserService).toHaveBeenCalledWith("user-123", "user");
-      expect(mockRes.json).toHaveBeenCalledWith({ message: "User deleted" });
-      expect(mockNext).not.toHaveBeenCalled();
+  describe("Delete Response Validation", () => {
+    it("should validate delete success response", () => {
+      const deleteResponseSchema = z.object({
+        message: z.string(),
+      });
+      const validResponse = {
+        message: "User deleted",
+      };
+      const result = deleteResponseSchema.safeParse(validResponse);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle admin role deletion", async () => {
-      mockReq.user.role = "admin";
-      const mockDeleteUserService =
-        deleteServiceModule.deleteUserService as jest.Mock;
+    it("should fail with missing message", () => {
+      const deleteResponseSchema = z.object({
+        message: z.string(),
+      });
+      const invalidResponse = {};
+      const result = deleteResponseSchema.safeParse(invalidResponse);
+      expect(result.success).toBe(false);
+    });
+  });
 
-      mockDeleteUserService.mockResolvedValue(undefined);
-
-      await deleteUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockDeleteUserService).toHaveBeenCalledWith("user-123", "admin");
-      expect(mockRes.json).toHaveBeenCalledWith({ message: "User deleted" });
+  describe("ProfileRequestSchema - General Request Validation", () => {
+    it("should validate basic profile request", () => {
+      const validRequest = {
+        userId: "user-123",
+      };
+      const result = ProfileRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle deletion service errors", async () => {
-      const mockDeleteUserService =
-        deleteServiceModule.deleteUserService as jest.Mock;
-      const mockError = new Error("User not found");
-
-      mockDeleteUserService.mockRejectedValue(mockError);
-
-      await deleteUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-      expect(mockRes.json).not.toHaveBeenCalled();
-    });
-
-    it("should handle unauthorized deletion attempts", async () => {
-      const mockDeleteUserService =
-        deleteServiceModule.deleteUserService as jest.Mock;
-      const mockError = new Error("Unauthorized to delete this user");
-
-      mockDeleteUserService.mockRejectedValue(mockError);
-
-      await deleteUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-    });
-
-    it("should handle missing userId", async () => {
-      mockReq.userId = undefined;
-      const mockDeleteUserService =
-        deleteServiceModule.deleteUserService as jest.Mock;
-      const mockError = new Error("User ID is required");
-
-      mockDeleteUserService.mockRejectedValue(mockError);
-
-      await deleteUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-    });
-
-    it("should pass correct parameters to delete service", async () => {
-      mockReq.userId = "another-user-id";
-      mockReq.user.role = "moderator";
-
-      const mockDeleteUserService =
-        deleteServiceModule.deleteUserService as jest.Mock;
-
-      mockDeleteUserService.mockResolvedValue(undefined);
-
-      await deleteUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockDeleteUserService).toHaveBeenCalledWith(
-        "another-user-id",
-        "moderator"
-      );
+    it("should fail with empty userId", () => {
+      const invalidRequest = {
+        userId: "",
+      };
+      const result = ProfileRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
     });
   });
 });

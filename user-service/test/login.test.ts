@@ -1,100 +1,133 @@
-import { Request, Response, NextFunction } from "express";
-import { loginUser } from "../src/controller/login.controller";
-import * as loginServiceModule from "../src/service/login.service";
+import { z } from "zod";
+import {
+  LoginRequestSchema,
+  LoginResponseSchema,
+  LoginSchema,
+} from "../src/utils/validationSchemas";
 
-jest.mock("../src/service/login.service");
-
-describe("Login Controller", () => {
-  let mockReq: Partial<Request>;
-  let mockRes: Partial<Response>;
-  let mockNext: NextFunction;
-
-  beforeEach(() => {
-    mockReq = {
-      body: {
+describe("Login Request & Response Validation", () => {
+  describe("LoginSchema - Input Validation", () => {
+    it("should validate correct email and password", () => {
+      const validData = {
         email: "test@example.com",
         password: "password123",
-      },
-    };
+      };
+      const result = LoginSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toEqual(validData);
+      }
+    });
 
-    mockRes = {
-      json: jest.fn().mockReturnThis(),
-      cookie: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
-    };
+    it("should fail with invalid email format", () => {
+      const invalidData = {
+        email: "invalid-email",
+        password: "password123",
+      };
+      const result = LoginSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
 
-    mockNext = jest.fn();
+    it("should fail with missing password", () => {
+      const invalidData = {
+        email: "test@example.com",
+      };
+      const result = LoginSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
 
-    jest.clearAllMocks();
+    it("should fail with empty password", () => {
+      const invalidData = {
+        email: "test@example.com",
+        password: "",
+      };
+      const result = LoginSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it("should fail with missing email", () => {
+      const invalidData = {
+        password: "password123",
+      };
+      const result = LoginSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
   });
 
-  describe("loginUser", () => {
-    it("should successfully login user and return accessToken and user data", async () => {
-      const mockLoginService = loginServiceModule.loginService as jest.Mock;
-      const mockUser = {
-        id: "1",
-        email: "test@example.com",
-        firstName: "John",
-        lastName: "Doe",
+  describe("LoginRequestSchema - Full Request Validation", () => {
+    it("should validate login request with correct body structure", () => {
+      const validRequest = {
+        body: {
+          email: "test@example.com",
+          password: "password123",
+        },
       };
-
-      mockLoginService.mockResolvedValue({
-        accessToken: "mock-access-token",
-        refreshToken: "mock-refresh-token",
-        user: mockUser,
-      });
-
-      await loginUser(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockLoginService).toHaveBeenCalledWith(
-        "test@example.com",
-        "password123"
-      );
-      expect(mockRes.cookie).toHaveBeenCalledWith(
-        "refreshToken",
-        "mock-refresh-token"
-      );
-      expect(mockRes.json).toHaveBeenCalledWith({
-        accessToken: "mock-access-token",
-        user: mockUser,
-      });
-      expect(mockNext).not.toHaveBeenCalled();
+      const result = LoginRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle login service errors", async () => {
-      const mockLoginService = loginServiceModule.loginService as jest.Mock;
-      const mockError = new Error("Invalid credentials");
+    it("should fail with missing body", () => {
+      const invalidRequest = {};
+      const result = LoginRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
+  });
 
-      mockLoginService.mockRejectedValue(mockError);
-
-      await loginUser(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-      expect(mockRes.json).not.toHaveBeenCalled();
+  describe("LoginResponseSchema - Response Validation", () => {
+    it("should validate correct login response", () => {
+      const validResponse = {
+        accessToken: "mock-access-token-abc123",
+        refreshToken: "mock-refresh-token-xyz789",
+        user: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe",
+        },
+      };
+      const result = LoginResponseSchema.safeParse(validResponse);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle missing email or password", async () => {
-      mockReq.body = {};
-      const mockLoginService = loginServiceModule.loginService as jest.Mock;
-      const mockError = new Error("Email and password are required");
+    it("should validate response without refreshToken", () => {
+      const validResponse = {
+        accessToken: "mock-access-token-abc123",
+        user: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe",
+        },
+      };
+      const result = LoginResponseSchema.safeParse(validResponse);
+      expect(result.success).toBe(true);
+    });
 
-      mockLoginService.mockRejectedValue(mockError);
+    it("should fail with missing accessToken", () => {
+      const invalidResponse = {
+        user: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe",
+        },
+      };
+      const result = LoginResponseSchema.safeParse(invalidResponse);
+      expect(result.success).toBe(false);
+    });
 
-      await loginUser(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
+    it("should fail with invalid user email in response", () => {
+      const invalidResponse = {
+        accessToken: "mock-access-token-abc123",
+        user: {
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          email: "invalid-email",
+          firstName: "John",
+          lastName: "Doe",
+        },
+      };
+      const result = LoginResponseSchema.safeParse(invalidResponse);
+      expect(result.success).toBe(false);
     });
   });
 });

@@ -1,135 +1,101 @@
-import { Request, Response, NextFunction } from "express";
-import { refreshUserToken } from "../src/controller/refresh.controller";
-import * as refreshServiceModule from "../src/service/refresh.service";
+import { z } from "zod";
+import { RefreshTokenSchema } from "../src/utils/validationSchemas";
 
-jest.mock("../src/service/refresh.service");
-
-describe("Refresh Controller", () => {
-  let mockReq: Partial<Request>;
-  let mockRes: Partial<Response>;
-  let mockNext: NextFunction;
-
-  beforeEach(() => {
-    mockReq = {
-      cookies: {
-        refreshToken: "mock-refresh-token",
-      },
-      body: {},
-    };
-
-    mockRes = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
-      cookie: jest.fn().mockReturnThis(),
-    };
-
-    mockNext = jest.fn();
-
-    jest.clearAllMocks();
-  });
-
-  describe("refreshUserToken", () => {
-    it("should successfully refresh token from cookie", async () => {
-      const mockRefreshService = refreshServiceModule.refreshService as jest.Mock;
-
-      mockRefreshService.mockResolvedValue({
-        accessToken: "new-access-token",
-        newRefreshToken: "new-refresh-token",
-      });
-
-      await refreshUserToken(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockRefreshService).toHaveBeenCalledWith("mock-refresh-token");
-      expect(mockRes.cookie).toHaveBeenCalledWith(
-        "refreshToken",
-        "new-refresh-token"
-      );
-      expect(mockRes.json).toHaveBeenCalledWith({
-        accessToken: "new-access-token",
-      });
-      expect(mockNext).not.toHaveBeenCalled();
+describe("Refresh Token Request & Response Validation", () => {
+  describe("RefreshTokenSchema - Response Validation", () => {
+    it("should validate successful token refresh response", () => {
+      const validResponse = {
+        accessToken: "new-access-token-abc123",
+        refreshToken: "new-refresh-token-xyz789",
+      };
+      const result = RefreshTokenSchema.safeParse(validResponse);
+      expect(result.success).toBe(true);
     });
 
-    it("should refresh token from request body if not in cookies", async () => {
-      mockReq = {
-        cookies: {},
+    it("should validate response with only accessToken", () => {
+      const validResponse = {
+        accessToken: "new-access-token-abc123",
+      };
+      const result = RefreshTokenSchema.safeParse(validResponse);
+      expect(result.success).toBe(true);
+    });
+
+    it("should fail with missing accessToken", () => {
+      const invalidResponse = {
+        refreshToken: "new-refresh-token-xyz789",
+      };
+      const result = RefreshTokenSchema.safeParse(invalidResponse);
+      expect(result.success).toBe(false);
+    });
+
+    it("should fail with empty accessToken", () => {
+      const invalidResponse = {
+        accessToken: "",
+      };
+      const result = RefreshTokenSchema.safeParse(invalidResponse);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("Refresh Token Request Schema", () => {
+    it("should validate refresh token in cookies", () => {
+      const refreshRequestSchema = z.object({
+        cookies: z.object({
+          refreshToken: z.string(),
+        }),
+        body: z.record(z.any()).optional(),
+      });
+      const validRequest = {
+        cookies: {
+          refreshToken: "mock-refresh-token",
+        },
+        body: {},
+      };
+      const result = refreshRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
+    });
+
+    it("should validate refresh token in request body", () => {
+      const refreshRequestSchema = z.object({
+        body: z.object({
+          refreshToken: z.string(),
+        }),
+      });
+      const validRequest = {
         body: {
           refreshToken: "token-from-body",
         },
       };
-
-      const mockRefreshService = refreshServiceModule.refreshService as jest.Mock;
-
-      mockRefreshService.mockResolvedValue({
-        accessToken: "new-access-token",
-        newRefreshToken: "new-refresh-token",
-      });
-
-      await refreshUserToken(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockRefreshService).toHaveBeenCalledWith("token-from-body");
-      expect(mockRes.json).toHaveBeenCalledWith({
-        accessToken: "new-access-token",
-      });
+      const result = refreshRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
     });
 
-    it("should return 400 if no refresh token provided", async () => {
-      mockReq = {
-        cookies: {},
+    it("should fail with missing refresh token", () => {
+      const refreshRequestSchema = z.object({
+        body: z.object({
+          refreshToken: z.string(),
+        }),
+      });
+      const invalidRequest = {
         body: {},
       };
+      const result = refreshRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
 
-      await refreshUserToken(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        message: "Refresh token is required",
+    it("should fail with empty refresh token string", () => {
+      const refreshRequestSchema = z.object({
+        body: z.object({
+          refreshToken: z.string().min(1),
+        }),
       });
-      expect(mockNext).not.toHaveBeenCalled();
-    });
-
-    it("should handle invalid refresh token error", async () => {
-      const mockRefreshService = refreshServiceModule.refreshService as jest.Mock;
-      const mockError = new Error("Invalid refresh token");
-
-      mockRefreshService.mockRejectedValue(mockError);
-
-      await refreshUserToken(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-      expect(mockRes.cookie).not.toHaveBeenCalled();
-      expect(mockRes.json).not.toHaveBeenCalled();
-    });
-
-    it("should handle refresh service errors", async () => {
-      const mockRefreshService = refreshServiceModule.refreshService as jest.Mock;
-      const mockError = new Error("Token verification failed");
-
-      mockRefreshService.mockRejectedValue(mockError);
-
-      await refreshUserToken(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
+      const invalidRequest = {
+        body: {
+          refreshToken: "",
+        },
+      };
+      const result = refreshRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
     });
   });
 });

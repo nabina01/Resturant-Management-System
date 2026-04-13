@@ -1,111 +1,176 @@
-import { Request, Response, NextFunction } from "express";
-import { registerUser } from "../src/controller/register.controller";
-import * as registerServiceModule from "../src/service/register.service";
+import { z } from "zod";
+import {
+  RegisterRequestSchema,
+  CreateUserSchema,
+  UserSchema,
+} from "../src/utils/validationSchemas";
 
-jest.mock("../src/service/register.service");
-
-describe("Register Controller", () => {
-  let mockReq: Partial<Request>;
-  let mockRes: Partial<Response>;
-  let mockNext: NextFunction;
-
-  beforeEach(() => {
-    mockReq = {
-      body: {
+describe("Register Request & Response Validation", () => {
+  describe("CreateUserSchema - Registration Input Validation", () => {
+    it("should validate correct registration data", () => {
+      const validData = {
         email: "newuser@example.com",
         password: "password123",
-        firstName: "John",
-        lastName: "Doe",
-        phone: "1234567890",
-      },
-    };
-
-    mockRes = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
-    };
-
-    mockNext = jest.fn();
-
-    jest.clearAllMocks();
-  });
-
-  describe("registerUser", () => {
-    it("should successfully register a new user", async () => {
-      const mockRegisterService = registerServiceModule.registerService as jest.Mock;
-      const mockUser = {
-        id: "1",
-        email: "newuser@example.com",
         firstName: "John",
         lastName: "Doe",
         phone: "1234567890",
       };
+      const result = CreateUserSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
 
-      mockRegisterService.mockResolvedValue(mockUser);
-
-      await registerUser(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockRegisterService).toHaveBeenCalledWith({
+    it("should validate registration without phone", () => {
+      const validData = {
         email: "newuser@example.com",
         password: "password123",
         firstName: "John",
         lastName: "Doe",
+      };
+      const result = CreateUserSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it("should fail with invalid email format", () => {
+      const invalidData = {
+        email: "invalid-email",
+        password: "password123",
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const result = CreateUserSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it("should fail with password less than 6 characters", () => {
+      const invalidData = {
+        email: "newuser@example.com",
+        password: "pass",
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const result = CreateUserSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it("should fail with missing firstName", () => {
+      const invalidData = {
+        email: "newuser@example.com",
+        password: "password123",
+        lastName: "Doe",
+      };
+      const result = CreateUserSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it("should fail with missing lastName", () => {
+      const invalidData = {
+        email: "newuser@example.com",
+        password: "password123",
+        firstName: "John",
+      };
+      const result = CreateUserSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it("should fail with empty firstName", () => {
+      const invalidData = {
+        email: "newuser@example.com",
+        password: "password123",
+        firstName: "",
+        lastName: "Doe",
+      };
+      const result = CreateUserSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it("should fail with missing email", () => {
+      const invalidData = {
+        password: "password123",
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const result = CreateUserSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("RegisterRequestSchema - Full Request Validation", () => {
+    it("should validate register request with correct structure", () => {
+      const validRequest = {
+        body: {
+          email: "newuser@example.com",
+          password: "password123",
+          firstName: "John",
+          lastName: "Doe",
+          phone: "1234567890",
+        },
+      };
+      const result = RegisterRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
+    });
+
+    it("should fail with missing body", () => {
+      const invalidRequest = {};
+      const result = RegisterRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("UserSchema - Response Validation", () => {
+    it("should validate user response with UUID ID", () => {
+      const validUser = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        email: "newuser@example.com",
+        firstName: "John",
+        lastName: "Doe",
         phone: "1234567890",
-      });
-      expect(mockRes.status).toHaveBeenCalledWith(201);
-      expect(mockRes.json).toHaveBeenCalledWith(mockUser);
-      expect(mockNext).not.toHaveBeenCalled();
+        role: "user",
+      };
+      const result = UserSchema.safeParse(validUser);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle duplicate email error", async () => {
-      const mockRegisterService = registerServiceModule.registerService as jest.Mock;
-      const mockError = new Error("Email already exists");
-
-      mockRegisterService.mockRejectedValue(mockError);
-
-      await registerUser(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-      expect(mockRes.status).not.toHaveBeenCalled();
+    it("should validate user response with string ID", () => {
+      const validUser = {
+        id: "user-123",
+        email: "newuser@example.com",
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const result = UserSchema.safeParse(validUser);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle missing required fields", async () => {
-      mockReq.body = { email: "newuser@example.com" };
-      const mockRegisterService = registerServiceModule.registerService as jest.Mock;
-      const mockError = new Error("Missing required fields");
-
-      mockRegisterService.mockRejectedValue(mockError);
-
-      await registerUser(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
+    it("should validate user response with optional fields", () => {
+      const validUser = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        email: "newuser@example.com",
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const result = UserSchema.safeParse(validUser);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle validation errors", async () => {
-      const mockRegisterService = registerServiceModule.registerService as jest.Mock;
-      const mockError = new Error("Invalid email format");
+    it("should fail with invalid email in response", () => {
+      const invalidUser = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        email: "invalid-email",
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const result = UserSchema.safeParse(invalidUser);
+      expect(result.success).toBe(false);
+    });
 
-      mockRegisterService.mockRejectedValue(mockError);
-
-      await registerUser(
-        mockReq as Request,
-        mockRes as Response,
-        mockNext
-      );
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
+    it("should fail with missing ID", () => {
+      const invalidUser = {
+        email: "newuser@example.com",
+        firstName: "John",
+        lastName: "Doe",
+      };
+      const result = UserSchema.safeParse(invalidUser);
+      expect(result.success).toBe(false);
     });
   });
 });

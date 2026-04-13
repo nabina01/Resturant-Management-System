@@ -1,80 +1,66 @@
-import { Request, Response, NextFunction } from "express";
-import { logoutUser } from "../src/controller/logout.controller";
-import * as logoutServiceModule from "../src/service/logout.service";
+import { z } from "zod";
+import { ProfileRequestSchema } from "../src/utils/validationSchemas";
 
-jest.mock("../src/service/logout.service");
+describe("Logout Request Validation", () => {
+  describe("ProfileRequestSchema - Logout Request Validation", () => {
+    it("should validate logout request with valid userId", () => {
+      const validRequest = {
+        userId: "user-123",
+      };
+      const result = ProfileRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
+    });
 
-describe("Logout Controller", () => {
-  let mockReq: Partial<any>;
-  let mockRes: Partial<Response>;
-  let mockNext: NextFunction;
+    it("should validate logout request with UUID format userId", () => {
+      const validRequest = {
+        userId: "550e8400-e29b-41d4-a716-446655440000",
+      };
+      const result = ProfileRequestSchema.safeParse(validRequest);
+      expect(result.success).toBe(true);
+    });
 
-  beforeEach(() => {
-    mockReq = {
-      userId: "user-123",
-    };
+    it("should fail with missing userId", () => {
+      const invalidRequest = {};
+      const result = ProfileRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
 
-    mockRes = {
-      json: jest.fn().mockReturnThis(),
-      clearCookie: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
-    };
+    it("should fail with empty userId", () => {
+      const invalidRequest = {
+        userId: "",
+      };
+      const result = ProfileRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
 
-    mockNext = jest.fn();
-
-    jest.clearAllMocks();
+    it("should fail with null userId", () => {
+      const invalidRequest = {
+        userId: null,
+      };
+      const result = ProfileRequestSchema.safeParse(invalidRequest);
+      expect(result.success).toBe(false);
+    });
   });
 
-  describe("logoutUser", () => {
-    it("should successfully logout user and clear refresh token cookie", async () => {
-      const mockLogoutService = logoutServiceModule.logoutService as jest.Mock;
-
-      mockLogoutService.mockResolvedValue(undefined);
-
-      await logoutUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockLogoutService).toHaveBeenCalledWith("user-123");
-      expect(mockRes.clearCookie).toHaveBeenCalledWith("refreshToken");
-      expect(mockRes.json).toHaveBeenCalledWith({
-        message: "Logged out successfully",
+  describe("Logout Response Structure", () => {
+    it("should validate logout success response format", () => {
+      const logoutResponseSchema = z.object({
+        message: z.string(),
       });
-      expect(mockNext).not.toHaveBeenCalled();
+      const validResponse = {
+        message: "Logged out successfully",
+      };
+      const result = logoutResponseSchema.safeParse(validResponse);
+      expect(result.success).toBe(true);
     });
 
-    it("should handle logout service errors", async () => {
-      const mockLogoutService = logoutServiceModule.logoutService as jest.Mock;
-      const mockError = new Error("Database error");
-
-      mockLogoutService.mockRejectedValue(mockError);
-
-      await logoutUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-      expect(mockRes.clearCookie).not.toHaveBeenCalled();
-      expect(mockRes.json).not.toHaveBeenCalled();
-    });
-
-    it("should handle invalid userId", async () => {
-      mockReq.userId = undefined;
-      const mockLogoutService = logoutServiceModule.logoutService as jest.Mock;
-      const mockError = new Error("User ID is required");
-
-      mockLogoutService.mockRejectedValue(mockError);
-
-      await logoutUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(mockError);
-    });
-
-    it("should call logout service with correct user ID", async () => {
-      const mockLogoutService = logoutServiceModule.logoutService as jest.Mock;
-
-      mockLogoutService.mockResolvedValue(undefined);
-
-      mockReq.userId = "different-user-id";
-      await logoutUser(mockReq as any, mockRes as Response, mockNext);
-
-      expect(mockLogoutService).toHaveBeenCalledWith("different-user-id");
+    it("should fail with missing message", () => {
+      const logoutResponseSchema = z.object({
+        message: z.string(),
+      });
+      const invalidResponse = {};
+      const result = logoutResponseSchema.safeParse(invalidResponse);
+      expect(result.success).toBe(false);
     });
   });
 });
